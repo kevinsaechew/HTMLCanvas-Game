@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+canvas {
+    border: 1px solid #d3d3d3;
+    background-color: #f1f1f1;
+}
+</style>
+</head>
+<body onload="startGame()">
+<script>
+
+var myGamePiece;
+var myScore;
+
+
+
+function startGame() {
+    myGameArea.start();
+    myGamePiece = new component(30, 30, "red", 10, 120, 0, 0);
+    myScore = new component("30px", "Consolas", "black", 280, 40, 0, 0, "text");
+
+
+ //   redGamePiece = new component(75, 75, "red", 10, 10, 1, 0);
+    yellowGamePiece = new component(75, 75, "yellow", 50, 60, 1, 1); 
+    blueGamePiece = new component(75, 75, "blue", 50, 60, 2, 1); 
+    randomComponentList = [];
+    counter = 0;
+}
+
+
+    myGameArea = {
+    canvas : document.createElement("canvas"),
+    start : function() {
+        this.canvas.width = 800;
+        this.canvas.height = 600;
+        this.canvas.style.cursor = "none"; //hide the original cursor
+
+        this.context = this.canvas.getContext("2d");
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+        this.interval = setInterval(updateGameArea, 20);
+        this.frameNo = 0;
+
+
+        window.addEventListener('mousemove', function (e) {
+            myGameArea.x = e.pageX;
+            myGameArea.y = e.pageY;
+        })
+    }, 
+    clear: function() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    },
+    stop : function() {
+        clearInterval(this.interval);
+    }
+}
+
+function makeRandomComponent() {
+    
+    width = Math.floor(Math.random() * 100);
+    height = Math.floor(Math.random() * 100);
+    x = Math.floor(Math.random() * 100);
+    y = Math.floor(Math.random() * 100);
+    xSpeed = 2;
+    ySpeed = 2;
+
+    var letters = '0123456789ABCDEF';
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+    var newComponent = new component(width, height, color, x, y, xSpeed, ySpeed);
+    return newComponent;
+    
+}
+
+function component(width, height, color, x, y, xSpeed, ySpeed, type) {
+    this.type = type;
+    this.width = width;
+    this.height = height;
+    this.x = x;
+    this.y = y; 
+    this.xSpeed = xSpeed;
+    this.ySpeed = ySpeed;
+    this.update = function(){
+    ctx = myGameArea.context;
+
+    if (this.type == "text") {
+        ctx.font = this.width + " " + this.height;
+        ctx.fillStyle = color;
+        ctx.fillText(this.text, this.x, this.y);
+    } else {
+        ctx.fillStyle = color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+    }, 
+    this.newPos = function() {
+        this.x += this.xSpeed;
+        this.y += this.ySpeed; 
+    },
+    this.crashWith = function(otherobj) {
+        var myleft = this.x;
+        var myright = this.x + (this.width);
+        var mytop = this.y;
+        var mybottom = this.y + (this.height);
+        var otherleft = otherobj.x;
+        var otherright = otherobj.x + (otherobj.width);
+        var othertop = otherobj.y;
+        var otherbottom = otherobj.y + (otherobj.height);
+        var crash = true;
+        if ((mybottom < othertop) ||
+               (mytop > otherbottom) ||
+               (myright < otherleft) ||
+               (myleft > otherright)) {
+           crash = false;
+        }
+        return crash;
+    }
+
+}
+
+
+function updateGameArea() {
+    
+    counter++;
+
+    if (counter == 80) {
+    counter = 0;
+    randomComponentList.push(makeRandomComponent());
+
+    for(var i = 0; i < randomComponentList.length; i++) {
+            updateDirection(randomComponentList[i]);
+        }
+    }
+
+    myGameArea.clear();
+    myGameArea.frameNo += 1;
+
+   // redGamePiece.x += 1;
+    yellowGamePiece.x += 1; 
+    yellowGamePiece.y += 1; 
+    blueGamePiece.x += 1; 
+    blueGamePiece.y += 2; 
+    
+    for(var i = 0; i < randomComponentList.length; i++)
+    {
+        randomComponentList[i].x += randomComponentList[i].xSpeed;
+        randomComponentList[i].y += randomComponentList[i].ySpeed;
+
+        randomComponentList[i].update();
+
+        if (myGamePiece.crashWith(randomComponentList[i])) {
+        myGameArea.stop();
+        }
+    }
+
+    myGameArea.xSpeed = 0;
+    myGameArea.ySpeed = 0;
+    if (myGameArea.x && myGameArea.y) {
+        myGamePiece.x = myGameArea.x;
+        myGamePiece.y = myGameArea.y; 
+    }
+
+    myScore.text="SCORE: " + myGameArea.frameNo;
+    myScore.update();
+  //  redGamePiece.update();
+    yellowGamePiece.update(); 
+    blueGamePiece.update();
+ //  myGamePiece.newPos();
+    myGamePiece.update();
+}
+
+
+function updateDirection(component) {
+    component.xSpeed += (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * 4);
+    component.ySpeed += (Math.random() < 0.5 ? -1 : 1) * Math.floor(Math.random() * 4);
+
+    if ((component.xSpeed > 0 && component.x > myGameArea.canvas.width) || (component.xSpeed < 0 && component.x < myGameArea.canvas.width)) {
+        component.xSpeed = -1 * component.xSpeed;
+    }
+    if ((component.ySpeed > 0 && component.y > myGameArea.canvas.height) || (component.ySpeed < 0 && component.y < myGameArea.canvas.height) ) {
+        component.ySpeed = -1 * component.ySpeed;
+    }
+
+    
+
+
+}
+
+</script>
+
+<p>Have fun playing this game! You're the red square. Try to dodge all the other squares and last as long as possible!</p>
+
+</body>
+</html>
